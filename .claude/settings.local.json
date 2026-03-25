@@ -5,7 +5,8 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"feat: implement remote storage support for S3-compatible services:*)",
       "Bash(git commit -m \"feat: add backup validation functionality:*)",
-      "Bash(git commit -m \"feat: enhance application discovery to support DaemonSet and ReplicaSet:*)"
+      "Bash(git commit -m \"feat: enhance application discovery to support DaemonSet and ReplicaSet:*)",
+      "Bash(git commit -m \"feat: add offline environment support for backup scripts:*)"
     ]
   }
 }
