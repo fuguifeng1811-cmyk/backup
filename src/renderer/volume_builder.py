@@ -3,10 +3,10 @@
 负责构建备份作业的卷挂载和卷配置
 """
 
-from typing import Dict, List
+from typing import Dict, List, Any, Union
 
 
-def build_volume_mounts(backup_config: Dict) -> List[Dict]:
+def build_volume_mounts(backup_config: Dict[str, Any]) -> List[Dict[str, Union[str, bool]]]:
     """
     构建卷挂载列表
 
@@ -16,7 +16,7 @@ def build_volume_mounts(backup_config: Dict) -> List[Dict]:
     Returns:
         卷挂载列表
     """
-    volume_mounts = []
+    volume_mounts: List[Dict[str, Union[str, bool]]] = []
     app_type = backup_config['app_type']
     params = backup_config.get('parameters', {})
 
@@ -48,7 +48,7 @@ def build_volume_mounts(backup_config: Dict) -> List[Dict]:
     return volume_mounts
 
 
-def build_volumes(backup_config: Dict) -> List[Dict]:
+def build_volumes(backup_config: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     构建卷列表
 
@@ -58,7 +58,7 @@ def build_volumes(backup_config: Dict) -> List[Dict]:
     Returns:
         卷列表
     """
-    volumes = []
+    volumes: List[Dict[str, Any]] = []
 
     # 检查是否启用离线模式
     offline_mode = backup_config.get('offline_mode', False)

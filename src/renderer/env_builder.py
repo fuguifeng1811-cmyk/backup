@@ -4,10 +4,10 @@
 """
 
 import os
-from typing import Dict, List
+from typing import Dict, List, Any, Union
 
 
-def build_env_vars(backup_config: Dict) -> List[Dict]:
+def build_env_vars(backup_config: Dict[str, Any]) -> List[Dict[str, Union[str, Dict[str, Any]]]]:
     """
     构建环境变量列表
 
@@ -17,7 +17,7 @@ def build_env_vars(backup_config: Dict) -> List[Dict]:
     Returns:
         环境变量列表
     """
-    env = []
+    env: List[Dict[str, Union[str, Dict[str, Any]]]] = []
     params = backup_config.get('parameters', {})
     app_type = backup_config['app_type']
 

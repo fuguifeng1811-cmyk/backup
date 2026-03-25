@@ -4,7 +4,7 @@
 """
 
 import os
-from typing import Dict
+from typing import Dict, Any, Union
 
 
 def build_backup_command(app_type: str, method: str, script_url: str, script_name: str) -> str:
@@ -20,7 +20,7 @@ def build_backup_command(app_type: str, method: str, script_url: str, script_nam
     Returns:
         备份命令字符串
     """
-    commands = []
+    commands: list[str] = []
 
     # 检查是否使用离线模式（从ConfigMap挂载脚本）
     offline_mode = os.environ.get('OFFLINE_MODE', 'false').lower() == 'true'
