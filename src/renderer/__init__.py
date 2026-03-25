@@ -8,6 +8,7 @@
 """
 
 import logging
+import os
 from typing import Dict, List, Optional
 import yaml
 
@@ -246,6 +247,14 @@ class TemplateRenderer:
         commands.append(f"curl -sSL -o /tmp/{remote_upload_script} {remote_upload_url}")
         commands.append(f"chmod +x /tmp/{remote_upload_script}")
 
+        # 如果启用了备份验证，下载验证脚本
+        verify_enabled = os.environ.get('BACKUP_VERIFY_ENABLED', 'false').lower() == 'true'
+        if verify_enabled:
+            verify_script = "backup-verify.sh"
+            verify_url = f"https://raw.githubusercontent.com/your-repo/backup/master/scripts/{verify_script}"
+            commands.append(f"curl -sSL -o /tmp/{verify_script} {verify_url}")
+            commands.append(f"chmod +x /tmp/{verify_script}")
+
         # 设置环境变量并执行备份
         if app_type == 'mysql':
             backup_type = 'full' if method == 'mysqldump' else 'binlog'
@@ -258,6 +267,10 @@ class TemplateRenderer:
             commands.append(f"APP_TYPE=postgresql /tmp/{script_name}")
         else:
             commands.append(f"APP_TYPE=generic /tmp/{script_name}")
+
+        # 如果启用了备份验证，在上传前验证备份
+        if verify_enabled:
+            commands.append(f"APP_TYPE={app_type} /tmp/{verify_script}")
 
         # 如果启用了远程存储，执行远程上传
         commands.append(f"/tmp/{remote_upload_script}")
