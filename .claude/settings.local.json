@@ -3,7 +3,8 @@
     "allow": [
       "Bash(git checkout:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"feat: implement remote storage support for S3-compatible services:*)"
+      "Bash(git commit -m \"feat: implement remote storage support for S3-compatible services:*)",
+      "Bash(git commit -m \"feat: add backup validation functionality:*)"
     ]
   }
 }

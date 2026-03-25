@@ -2,7 +2,7 @@
 应用发现模块 - 识别 K8s 中有状态应用和持久化数据的应用
 
 功能:
-- 发现有状态应用（StatefulSet、使用 PVC 的 Deployment/Pod）
+- 发现有状态应用（StatefulSet、Deployment、DaemonSet、ReplicaSet、Pod）
 - 识别持久化存储（PVC、PV）
 - 提取备份相关元数据
 """
@@ -10,7 +10,7 @@
 import logging
 from typing import List, Dict, Optional
 from kubernetes import client, config
-from kubernetes.client import V1StatefulSet, V1Deployment, V1Pod, V1PersistentVolumeClaim
+from kubernetes.client import V1StatefulSet, V1Deployment, V1Pod, V1PersistentVolumeClaim, V1DaemonSet, V1ReplicaSet
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +63,12 @@ class ApplicationDiscovery:
             # 发现使用 PVC 的 Deployment
             apps.extend(self._discover_pvc_deployments(ns))
 
+            # 发现使用 PVC 的 DaemonSet
+            apps.extend(self._discover_pvc_daemonsets(ns))
+
+            # 发现使用 PVC 的 ReplicaSet
+            apps.extend(self._discover_pvc_replicasets(ns))
+
             # 发现使用 PVC 的独立 Pod
             apps.extend(self._discover_pvc_pods(ns))
 
@@ -101,6 +107,42 @@ class ApplicationDiscovery:
             return results
         except Exception as e:
             logger.error(f"发现 Deployment 失败 (namespace={namespace}): {e}")
+            return []
+
+    def _discover_pvc_daemonsets(self, namespace: str) -> List[Dict]:
+        """发现使用 PVC 的 DaemonSet"""
+        try:
+            daemonsets = self.apps_v1.list_namespaced_daemon_set(namespace=namespace)
+            results = []
+
+            for ds in daemonsets.items:
+                # 检查是否使用 PVC
+                if self._has_pvc(ds.spec.template.spec):
+                    app_info = self._parse_daemonset(ds, namespace)
+                    if app_info:
+                        results.append(app_info)
+
+            return results
+        except Exception as e:
+            logger.error(f"发现 DaemonSet 失败 (namespace={namespace}): {e}")
+            return []
+
+    def _discover_pvc_replicasets(self, namespace: str) -> List[Dict]:
+        """发现使用 PVC 的 ReplicaSet"""
+        try:
+            replicasets = self.apps_v1.list_namespaced_replica_set(namespace=namespace)
+            results = []
+
+            for rs in replicasets.items:
+                # 检查是否使用 PVC
+                if self._has_pvc(rs.spec.template.spec):
+                    app_info = self._parse_replicaset(rs, namespace)
+                    if app_info:
+                        results.append(app_info)
+
+            return results
+        except Exception as e:
+            logger.error(f"发现 ReplicaSet 失败 (namespace={namespace}): {e}")
             return []
 
     def _discover_pvc_pods(self, namespace: str) -> List[Dict]:
@@ -166,6 +208,45 @@ class ApplicationDiscovery:
             }
         except Exception as e:
             logger.error(f"解析 Deployment 失败 ({deploy.metadata.name}): {e}")
+            return None
+
+    def _parse_daemonset(self, ds: V1DaemonSet, namespace: str) -> Optional[Dict]:
+        """解析 DaemonSet 信息"""
+        try:
+            pvcs = self._extract_pvcs_from_pod_spec(ds.spec.template.spec)
+
+            return {
+                'type': 'DaemonSet',
+                'name': ds.metadata.name,
+                'namespace': namespace,
+                'labels': ds.metadata.labels or {},
+                'annotations': ds.metadata.annotations or {},
+                'desired_scheduled': ds.status.desired_number_scheduled if ds.status else 0,
+                'current_number_scheduled': ds.status.current_number_scheduled if ds.status else 0,
+                'pvcs': pvcs,
+                'has_pvc': len(pvcs) > 0
+            }
+        except Exception as e:
+            logger.error(f"解析 DaemonSet 失败 ({ds.metadata.name}): {e}")
+            return None
+
+    def _parse_replicaset(self, rs: V1ReplicaSet, namespace: str) -> Optional[Dict]:
+        """解析 ReplicaSet 信息"""
+        try:
+            pvcs = self._extract_pvcs_from_pod_spec(rs.spec.template.spec)
+
+            return {
+                'type': 'ReplicaSet',
+                'name': rs.metadata.name,
+                'namespace': namespace,
+                'labels': rs.metadata.labels or {},
+                'annotations': rs.metadata.annotations or {},
+                'replicas': rs.spec.replicas,
+                'pvcs': pvcs,
+                'has_pvc': len(pvcs) > 0
+            }
+        except Exception as e:
+            logger.error(f"解析 ReplicaSet 失败 ({rs.metadata.name}): {e}")
             return None
 
     def _parse_pod(self, pod: V1Pod, namespace: str) -> Optional[Dict]:
@@ -278,8 +359,8 @@ class ApplicationDiscovery:
             except Exception as e:
                 logger.error(f"获取 StatefulSet PVC 失败: {e}")
 
-        elif app['type'] in ['Deployment', 'Pod']:
-            # Deployment/Pod 直接引用 PVC
+        elif app['type'] in ['Deployment', 'DaemonSet', 'ReplicaSet', 'Pod']:
+            # 其他类型直接引用 PVC
             for pvc_info in app.get('pvcs', []):
                 pvc_detail = self.get_pvc_details(namespace, pvc_info['name'])
                 if pvc_detail:
