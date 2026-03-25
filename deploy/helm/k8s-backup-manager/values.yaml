@@ -89,21 +89,28 @@ serviceAccount:
 rbac:
   create: true
   rules:
+    # 读取权限：发现应用需要读取资源信息
     - apiGroups: [""]
       resources: ["pods", "pods/exec", "namespaces"]
       verbs: ["get", "list", "watch"]
     - apiGroups: [""]
       resources: ["persistentvolumeclaims", "persistentvolumes"]
-      verbs: ["get", "list", "watch", "create"]
-    - apiGroups: ["apps"]
-      resources: ["deployments", "statefulsets", "daemonsets"]
       verbs: ["get", "list", "watch"]
+    - apiGroups: ["apps"]
+      resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
+      verbs: ["get", "list", "watch"]
+    # 写入权限：生成备份资源
     - apiGroups: ["batch"]
-      resources: ["jobs", "cronjobs"]
+      resources: ["jobs"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: [""]
+      resources: ["configmaps", "secrets", "persistentvolumeclaims"]
       verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
     - apiGroups: ["snapshot.storage.k8s.io"]
-      resources: ["volumesnapshots", "volumesnapshotclasses"]
+      resources: ["volumesnapshots", "volumesnapshotcontents"]
       verbs: ["get", "list", "watch", "create", "delete"]
+    # 注释：不授予对核心工作负载（Deployment/StatefulSet）的写权限
+    # 注释：CronJobs 使用独立的权限控制（如果需要定时任务）
 
 # 备份存储配置
 backupStorage:

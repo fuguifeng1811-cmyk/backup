@@ -35,8 +35,23 @@ fi
 
 # 构建 MySQL 连接参数
 MYSQL_OPTS="--host=${MYSQL_HOST} --port=${MYSQL_PORT} --user=${MYSQL_USER}"
+
+# 安全处理密码 - 使用临时配置文件避免密码泄露到进程列表
 if [ -n "${MYSQL_PASSWORD}" ]; then
-    MYSQL_OPTS="${MYSQL_OPTS} --password=${MYSQL_PASSWORD}"
+    # 创建临时配置文件（仅当前用户可读）
+    MYSQL_CONFIG_FILE=$(mktemp)
+    chmod 600 "${MYSQL_CONFIG_FILE}"
+
+    cat > "${MYSQL_CONFIG_FILE}" <<EOF
+[client]
+password=${MYSQL_PASSWORD}
+EOF
+
+    # 添加配置文件参数
+    MYSQL_OPTS="${MYSQL_OPTS} --defaults-extra-file=${MYSQL_CONFIG_FILE}"
+
+    # 确保临时文件在脚本退出时被删除
+    trap "rm -f ${MYSQL_CONFIG_FILE}" EXIT INT TERM
 fi
 
 log "开始 MySQL 备份: type=${BACKUP_TYPE}, database=${MYSQL_DATABASE:-all}"

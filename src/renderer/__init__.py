@@ -455,14 +455,14 @@ class TemplateRenderer:
         secret_data = {}
 
         if app_type == 'mysql':
-            secret_data['MYSQL_PASSWORD'] = 'your-password'  # 用户需要修改
+            secret_data['MYSQL_PASSWORD'] = 'CHANGE_ME'  # TODO: Replace with actual password from user input or external secret
         elif app_type == 'postgresql':
-            secret_data['PGPASSWORD'] = 'your-password'
+            secret_data['PGPASSWORD'] = 'CHANGE_ME'
         elif app_type == 'redis':
-            secret_data['REDIS_PASSWORD'] = 'your-password'
+            secret_data['REDIS_PASSWORD'] = 'CHANGE_ME'
         elif app_type == 'minio':
-            secret_data['MINIO_ACCESS_KEY'] = 'your-access-key'
-            secret_data['MINIO_SECRET_KEY'] = 'your-secret-key'
+            secret_data['MINIO_ACCESS_KEY'] = 'CHANGE_ME'
+            secret_data['MINIO_SECRET_KEY'] = 'CHANGE_ME'
 
         if not secret_data:
             return None
@@ -474,14 +474,22 @@ class TemplateRenderer:
                 'name': f"{app_name}-backup-secret",
                 'namespace': namespace,
                 'annotations': {
-                    'backup.k8s.io/app-name': app_name
+                    'backup.k8s.io/app-name': app_name,
+                    'kubernetes.io/description': 'Backup credentials - update with actual secrets before use'
                 }
             },
             'type': 'Opaque',
             'stringData': secret_data
         }
 
-        return yaml.dump(secret_spec, default_flow_style=False, allow_unicode=True)
+        # Add warning comment at the top
+        warning_comment = """# WARNING: This Secret contains placeholder values
+# Replace all 'CHANGE_ME' values with actual secrets before applying
+# Example: kubectl create secret generic {name} --from-literal=MYSQL_PASSWORD='actual-password' -n {namespace}
+""".format(name=f"{app_name}-backup-secret", namespace=namespace)
+
+        yaml_output = yaml.dump(secret_spec, default_flow_style=False, allow_unicode=True)
+        return warning_comment + yaml_output
 
     def render_backup_pvc(self, backup_config: Dict) -> str:
         """

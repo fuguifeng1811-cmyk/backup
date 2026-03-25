@@ -6,6 +6,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "k8s-backup-manager.labels" . | nindent 4 }}
+  annotations:
+    kubernetes.io/description: "Backup Manager minimal permissions - follows principle of least privilege"
 rules:
 {{- toYaml .Values.rbac.rules | nindent 2 }}
 ---
