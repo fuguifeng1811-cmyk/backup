@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(git checkout:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"feat: implement remote storage support for S3-compatible services:*)",
+      "Bash(git commit -m \"feat: add backup validation functionality:*)",
+      "Bash(git commit -m \"feat: enhance application discovery to support DaemonSet and ReplicaSet:*)",
+      "Bash(git commit -m \"feat: add offline environment support for backup scripts:*)",
+      "Bash(git commit -m \"refactor: split renderer module into smaller modules:*)",
+      "Bash(git commit -m \"feat: add complete type annotations to renderer modules:*)"
     ]
   }
 }
