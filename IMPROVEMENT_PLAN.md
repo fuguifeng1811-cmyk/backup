@@ -51,7 +51,7 @@
 - **文件**: [src/renderer/__init__.py:240-253](src/renderer/__init__.py#L240-L253)
 - **问题**: 硬编码 GitHub URL，离线环境无法下载脚本
 - **修复**: 支持 ConfigMap 挂载或私有仓库
-- **状态**: ❌ 待修复
+- **状态**: ✅ 已完成
 
 ---
 
