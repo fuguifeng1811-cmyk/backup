@@ -78,6 +78,19 @@ backupManager:
       max_size: 10
       backup_count: 5
 
+# 远程存储配置
+remoteStorage:
+  enabled: false
+  type: "s3"  # s3
+  s3:
+    endpoint: ""  # S3 服务端点
+    bucket: ""    # 存储桶
+    region: "us-east-1"  # 区域
+    credentials:
+      existingSecret: ""  # 使用现有的 Secret
+      accessKey: ""       # 访问密钥（如果不用现有 Secret）
+      secretKey: ""       # 秘密密钥（如果不用现有 Secret）
+
 # ServiceAccount 配置
 serviceAccount:
   create: true

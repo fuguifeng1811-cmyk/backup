@@ -24,11 +24,22 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
+    unzip \
+    groff \
+    python3 \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
 # 从构建阶段复制依赖
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
+
+# 安装 AWS CLI
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install \
+    && rm awscliv2.zip \
+    && rm -rf aws/
 
 # 复制应用代码
 COPY src/ ./src/

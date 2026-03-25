@@ -236,19 +236,31 @@ class TemplateRenderer:
             if tools:
                 commands.append(f"apk add --no-cache {' '.join(tools)}")
 
-        # 下载脚本
+        # 下载主要备份脚本
         commands.append(f"curl -sSL -o /tmp/{script_name} {script_url}")
         commands.append(f"chmod +x /tmp/{script_name}")
 
-        # 设置备份类型
+        # 如果有远程存储支持，也需要下载远程上传脚本
+        remote_upload_script = "remote-upload.sh"
+        remote_upload_url = f"https://raw.githubusercontent.com/your-repo/backup/master/scripts/{remote_upload_script}"
+        commands.append(f"curl -sSL -o /tmp/{remote_upload_script} {remote_upload_url}")
+        commands.append(f"chmod +x /tmp/{remote_upload_script}")
+
+        # 设置环境变量并执行备份
         if app_type == 'mysql':
             backup_type = 'full' if method == 'mysqldump' else 'binlog'
-            commands.append(f"BACKUP_TYPE={backup_type} /tmp/{script_name}")
+            commands.append(f"APP_TYPE=mysql BACKUP_TYPE={backup_type} /tmp/{script_name}")
         elif app_type == 'redis':
-            backup_type = params.get('backup_type', 'rdb')
-            commands.append(f"BACKUP_TYPE={backup_type} /tmp/{script_name}")
+            commands.append(f"APP_TYPE=redis BACKUP_TYPE=rdb /tmp/{script_name}")
+        elif app_type == 'minio':
+            commands.append(f"APP_TYPE=minio /tmp/{script_name}")
+        elif app_type == 'postgresql':
+            commands.append(f"APP_TYPE=postgresql /tmp/{script_name}")
         else:
-            commands.append(f"/tmp/{script_name}")
+            commands.append(f"APP_TYPE=generic /tmp/{script_name}")
+
+        # 如果启用了远程存储，执行远程上传
+        commands.append(f"/tmp/{remote_upload_script}")
 
         return ' && '.join(commands)
 
@@ -322,6 +334,45 @@ class TemplateRenderer:
 
         # 添加通用备份目录
         env.append({'name': 'BACKUP_DIR', 'value': '/backup'})
+
+        # 添加远程存储环境变量（如果配置了远程存储）
+        remote_storage = backup_config.get('remote_storage', {})
+        if remote_storage.get('enabled', False):
+            env.append({'name': 'REMOTE_STORAGE_ENABLED', 'value': 'true'})
+            storage_type = remote_storage.get('type', 'none')
+            env.append({'name': 'REMOTE_STORAGE_TYPE', 'value': storage_type})
+
+            if storage_type == 's3':
+                s3_config = remote_storage.get('s3', {})
+                endpoint = s3_config.get('endpoint', '')
+                bucket = s3_config.get('bucket', '')
+
+                if endpoint:
+                    env.append({'name': 'S3_ENDPOINT', 'value': endpoint})
+                if bucket:
+                    env.append({'name': 'S3_BUCKET', 'value': bucket})
+
+                # S3 访问凭证通过 Secret 引用
+                env.extend([
+                    {
+                        'name': 'S3_ACCESS_KEY',
+                        'valueFrom': {
+                            'secretKeyRef': {
+                                'name': f"{backup_config['app_name']}-backup-secret",
+                                'key': 'S3_ACCESS_KEY'
+                            }
+                        }
+                    },
+                    {
+                        'name': 'S3_SECRET_KEY',
+                        'valueFrom': {
+                            'secretKeyRef': {
+                                'name': f"{backup_config['app_name']}-backup-secret",
+                                'key': 'S3_SECRET_KEY'
+                            }
+                        }
+                    }
+                ])
 
         # 敏感信息从 Secret 引用
         if app_type == 'mysql':
@@ -463,6 +514,14 @@ class TemplateRenderer:
         elif app_type == 'minio':
             secret_data['MINIO_ACCESS_KEY'] = 'CHANGE_ME'
             secret_data['MINIO_SECRET_KEY'] = 'CHANGE_ME'
+
+        # 添加 S3 存储凭证（如果配置了远程存储）
+        remote_storage = backup_config.get('remote_storage', {})
+        if remote_storage.get('enabled', False):
+            storage_type = remote_storage.get('type', 'none')
+            if storage_type == 's3':
+                secret_data['S3_ACCESS_KEY'] = 'CHANGE_ME'
+                secret_data['S3_SECRET_KEY'] = 'CHANGE_ME'
 
         if not secret_data:
             return None
