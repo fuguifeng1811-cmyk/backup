@@ -1,0 +1,77 @@
+{{- $mode := .Values.backupManager.mode -}}
+
+{{- if eq $mode "cron" -}}
+# CronJob 模式 - 定时运行
+{{- if .Values.cronjob.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "k8s-backup-manager.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "k8s-backup-manager.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup-manager
+  {{- with .Values.cronjob.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  schedule: {{ .Values.cronjob.schedule | quote }}
+  concurrencyPolicy: {{ .Values.cronjob.concurrencyPolicy }}
+  successfulJobsHistoryLimit: {{ .Values.cronjob.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.cronjob.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "k8s-backup-manager.labels" . | nindent 12 }}
+            app.kubernetes.io/component: backup-manager
+          {{- with .Values.job.annotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        spec:
+          {{- include "k8s-backup-manager.podSpec" . | nindent 10 }}
+{{- end }}
+
+{{- else -}}
+# Job 模式 - 一次性运行
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "k8s-backup-manager.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "k8s-backup-manager.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup-manager
+    app.kubernetes.io/part-of: {{ include "k8s-backup-manager.name" . }}
+  {{- with .Values.job.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if eq $mode "generate" }}
+  generateName: {{ include "k8s-backup-manager.fullname" . }}-
+  {{- end }}
+spec:
+  {{- if .Values.job.backoffLimit }}
+  backoffLimit: {{ .Values.job.backoffLimit }}
+  {{- end }}
+  {{- if .Values.job.activeDeadlineSeconds }}
+  activeDeadlineSeconds: {{ .Values.job.activeDeadlineSeconds }}
+  {{- end }}
+  {{- if .Values.job.ttlSecondsAfterFinished }}
+  ttlSecondsAfterFinished: {{ .Values.job.ttlSecondsAfterFinished }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "k8s-backup-manager.labels" . | nindent 8 }}
+        app.kubernetes.io/component: backup-manager
+      {{- with .Values.job.annotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- include "k8s-backup-manager.podSpec" . | nindent 6 }}
+{{- end }}

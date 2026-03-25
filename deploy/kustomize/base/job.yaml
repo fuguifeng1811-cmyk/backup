@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k8s-backup-manager-discover
+spec:
+  template:
+    spec:
+      serviceAccountName: k8s-backup-manager
+      containers:
+        - name: backup-manager
+          image: your-registry/k8s-backup-manager:latest
+          command: ["python", "src/main.py", "discover"]
+          volumeMounts:
+            - name: config
+              mountPath: /app/config.yaml
+              subPath: config.yaml
+              readOnly: true
+            - name: backup-storage
+              mountPath: /app/manifests
+      volumes:
+        - name: config
+          configMap:
+            name: k8s-backup-manager-config
+        - name: backup-storage
+          persistentVolumeClaim:
+            claimName: k8s-backup-manager-backup
+      restartPolicy: Never

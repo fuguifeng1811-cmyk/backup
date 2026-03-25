@@ -1,0 +1,22 @@
+# kustomization.yaml - Production Overlay
+
+resources:
+  - ../../base
+
+patchesStrategicMerge:
+  - pvc-patch.yaml
+  - job-patch.yaml
+
+images:
+  - name: your-registry/k8s-backup-manager
+    newTag: 0.1.0
+    newName: registry.example.com/k8s-backup-manager
+
+namespace: backup-prod
+
+commonLabels:
+  env: production
+
+replicas:
+  - name: k8s-backup-manager-discover
+    count: 1

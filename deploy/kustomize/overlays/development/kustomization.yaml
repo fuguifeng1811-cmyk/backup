@@ -1,0 +1,16 @@
+# kustomization.yaml - Development Overlay
+
+resources:
+  - ../../base
+
+patchesStrategicMerge:
+  - job-dev-patch.yaml
+
+namespace: backup-dev
+
+commonLabels:
+  env: development
+
+images:
+  - name: your-registry/k8s-backup-manager
+    newTag: latest

@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k8s-backup-manager-config
+data:
+  config.yaml: |
+    kubernetes:
+      kubeconfig: ""
+      context: ""
+
+    backup:
+      root_path: "/data/backup"
+      strategy:
+        full_backup_interval: 7
+        incremental_backup_interval: 24
+      retention:
+        full_backup_count: 4
+        incremental_backup_count: 7
+        max_days: 30
+
+    exclude:
+      namespaces: []
+      labels: []
+      pvc_patterns: []
+
+    logging:
+      level: "INFO"
+      file: "/var/log/k8s-backup-manager.log"

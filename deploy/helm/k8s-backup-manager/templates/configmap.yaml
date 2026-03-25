@@ -1,0 +1,12 @@
+{{- if .Values.backupManager.config -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "k8s-backup-manager.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "k8s-backup-manager.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    {{- toYaml .Values.backupManager.config | nindent 4 }}
+{{- end }}

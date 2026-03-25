@@ -1,0 +1,60 @@
+# .dockerignore - 排除不需要打包到镜像的文件
+
+# 版本控制
+.git
+.gitignore
+
+# IDE 和编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 测试相关
+tests/
+pytest.ini
+
+# 文档
+README.md
+UPGRADE.md
+CHANGELOG.md
+
+# 示例和演示
+examples/
+demo.sh
+
+# 构建产物
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 备份输出
+manifests/
+*.log
+*.tmp
+
+# 配置文件（使用环境变量或 Secret）
+config.yaml
+
+# 其他
+Dockerfile*
+docker-compose.yml
+Makefile
+*.md

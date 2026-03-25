@@ -1,0 +1,21 @@
+# Helm Chart 配置
+apiVersion: v2
+name: k8s-backup-manager
+description: Kubernetes Backup Manager - 自动发现和备份有状态应用
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/your-org/k8s-backup-manager
+icon: https://cdn-icons-png.flaticon.com/512/3764/3764571.png
+keywords:
+  - backup
+  - kubernetes
+  - disaster-recovery
+  - mysql
+  - postgresql
+  - redis
+sources:
+  - https://github.com/your-org/k8s-backup-manager
+maintainers:
+  - name: Your Name
+    email: your.email@example.com

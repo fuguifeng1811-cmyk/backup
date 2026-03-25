@@ -1,0 +1,222 @@
+# Default values for k8s-backup-manager
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# 镜像配置
+image:
+  repository: your-registry/k8s-backup-manager
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+  # 镜像拉取 Secret（私有仓库）
+  pullSecrets: []
+    # - name: registry-secret
+
+# 备份管理器配置
+backupManager:
+  # 运行模式: discover (仅发现), generate (发现并生成清单), cron (定时运行)
+  mode: discover
+
+  # 扫描的命名空间（留空则扫描所有）
+  namespaces: []
+    # - default
+    # - database
+    # - app-production
+
+  # 输出目录
+  outputDir: /app/manifests
+
+  # 配置文件
+  config:
+    # Kubernetes 配置
+    kubernetes:
+      kubeconfig: ""
+      context: ""
+
+    # 备份配置
+    backup:
+      root_path: "/data/backup"
+      strategy:
+        full_backup_interval: 7
+        incremental_backup_interval: 24
+      retention:
+        full_backup_count: 4
+        incremental_backup_count: 7
+        max_days: 30
+      filename_format: "{app_name}_{namespace}_{timestamp}_{type}"
+
+    # 排除规则
+    exclude:
+      namespaces: []
+        # - kube-system
+        # - monitoring
+      labels: []
+        # - backup-enabled=false
+      pvc_patterns: []
+        # - "^tmp-.*"
+
+    # 邮件通知
+    email:
+      enabled: false
+      smtp_host: "smtp.example.com"
+      smtp_port: 587
+      smtp_username: "backup@example.com"
+      # smtp_password: 使用 Secret 配置
+      from_address: "backup@example.com"
+      to_addresses: []
+        # - admin@example.com
+
+    # Webhook 通知
+    webhook:
+      enabled: false
+      url: "https://hooks.example.com/backup"
+      method: "POST"
+
+    # 日志配置
+    logging:
+      level: "INFO"
+      file: "/var/log/k8s-backup-manager.log"
+      max_size: 10
+      backup_count: 5
+
+# ServiceAccount 配置
+serviceAccount:
+  create: true
+  name: k8s-backup-manager
+  annotations: {}
+  labels: {}
+
+# RBAC 配置
+rbac:
+  create: true
+  rules:
+    - apiGroups: [""]
+      resources: ["pods", "pods/exec", "namespaces"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: [""]
+      resources: ["persistentvolumeclaims", "persistentvolumes"]
+      verbs: ["get", "list", "watch", "create"]
+    - apiGroups: ["apps"]
+      resources: ["deployments", "statefulsets", "daemonsets"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["batch"]
+      resources: ["jobs", "cronjobs"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: ["snapshot.storage.k8s.io"]
+      resources: ["volumesnapshots", "volumesnapshotclasses"]
+      verbs: ["get", "list", "watch", "create", "delete"]
+
+# 备份存储配置
+backupStorage:
+  enabled: true
+  storageClassName: "standard"
+  accessModes:
+    - ReadWriteOnce
+  size: 100Gi
+  annotations: {}
+
+# 定时任务配置（当 mode=cron 时使用）
+cronjob:
+  enabled: false
+  schedule: "0 2 * * *"  # 每天凌晨 2 点
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  annotations: {}
+
+# Job 配置
+job:
+  annotations: {}
+  labels: {}
+  backoffLimit: 3
+  activeDeadlineSeconds: 3600  # 1 小时超时
+  ttlSecondsAfterFinished: 86400  # 24 小时后自动清理
+
+# Pod 安全上下文
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# 资源限制
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# 节点选择器
+nodeSelector: {}
+  # kubernetes.io/os: linux
+
+# 容忍度
+tolerations: []
+  # - key: "dedicated"
+  #   operator: "Equal"
+  #   value: "backup"
+  #   effect: "NoSchedule"
+
+# 亲和性
+affinity: {}
+  # nodeAffinity:
+  #   requiredDuringSchedulingIgnoredDuringExecution:
+  #     nodeSelectorTerms:
+  #     - matchExpressions:
+  #       - key: kubernetes.io/os
+  #         operator: In
+  #         values:
+  #         - linux
+
+# 环境变量
+env: []
+  # - name: CUSTOM_VAR
+  #   value: "custom-value"
+
+# 环境变量从 ConfigMap
+envFrom: []
+  # - configMapRef:
+  #     name: backup-manager-config
+
+# 卷挂载
+extraVolumeMounts: []
+  # - name: custom-scripts
+  #   mountPath: /app/custom-scripts
+  #   readOnly: true
+
+# 额外的卷
+extraVolumes: []
+  # - name: custom-scripts
+  #   configMap:
+  #     name: custom-backup-scripts
+
+# 额外的 Secrets（用于敏感配置）
+extraSecrets: []
+  # - name: backup-manager-secrets
+  #   data:
+  #     SMTP_PASSWORD: "base64-encoded-password"
+
+# 备份脚本配置映射
+backupScripts:
+  enabled: true
+  scripts:
+    mysql: |
+      #!/bin/bash
+      echo "MySQL backup script"
+    postgresql: |
+      #!/bin/bash
+      echo "PostgreSQL backup script"
+    redis: |
+      #!/bin/bash
+      echo "Redis backup script"
+    generic: |
+      #!/bin/bash
+      echo "Generic PVC backup script"

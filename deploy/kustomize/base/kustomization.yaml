@@ -1,0 +1,23 @@
+# kustomization.yaml - Base 配置
+
+namespace: backup
+
+resources:
+  - namespace.yaml
+  - serviceaccount.yaml
+  - role.yaml
+  - rolebinding.yaml
+  - configmap.yaml
+  - pvc.yaml
+  - job.yaml
+
+images:
+  - name: your-registry/k8s-backup-manager
+    newTag: 0.1.0
+
+commonLabels:
+  app: k8s-backup-manager
+  component: backup
+
+commonAnnotations:
+  backup/discover: "enabled"

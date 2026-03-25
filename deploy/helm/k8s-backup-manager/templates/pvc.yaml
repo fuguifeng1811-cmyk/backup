@@ -1,0 +1,22 @@
+{{- if .Values.backupStorage.enabled -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "k8s-backup-manager.fullname" . }}-backup
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "k8s-backup-manager.labels" . | nindent 4 }}
+  {{- with .Values.backupStorage.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    {{- toYaml .Values.backupStorage.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.backupStorage.size }}
+  {{- if .Values.backupStorage.storageClassName }}
+  storageClassName: {{ .Values.backupStorage.storageClassName }}
+  {{- end }}
+{{- end }}

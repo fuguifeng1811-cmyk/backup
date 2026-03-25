@@ -1,0 +1,43 @@
+# Docker Compose 配置 - 用于本地测试和开发
+
+version: '3.8'
+
+services:
+  backup-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: k8s-backup-manager
+    environment:
+      - LOG_LEVEL=INFO
+    volumes:
+      # 挂载 kubeconfig（如果在本地运行）
+      - ~/.kube/config:/home/backup/.kube/config:ro
+      # 挂载配置文件
+      - ./config.yaml:/app/config.yaml:ro
+      # 挂载输出目录
+      - ./manifests:/app/manifests
+    command: ["python", "src/main.py", "discover"]
+    networks:
+      - backup-network
+
+  # 可选：本地测试用的 MySQL
+  mysql-test:
+    image: mysql:8.0
+    container_name: mysql-test-backup
+    environment:
+      MYSQL_ROOT_PASSWORD: testpassword
+      MYSQL_DATABASE: test_db
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - backup-network
+    ports:
+      - "3306:3306"
+
+networks:
+  backup-network:
+    driver: bridge
+
+volumes:
+  mysql-data:

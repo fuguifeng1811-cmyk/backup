@@ -1,0 +1,169 @@
+# K8s Backup Manager 配置文件示例
+# 复制为 config.yaml 后修改
+
+# Kubernetes 配置
+kubernetes:
+  # kubeconfig 路径，留空则使用默认位置 (~/.kube/config)
+  kubeconfig: ""
+  # context 名称，留空则使用当前 context
+  context: ""
+  # API Server 地址（仅在不使用 kubeconfig 时需要）
+  # server: "https://k8s-api.example.com:6443"
+  # 证书验证（仅在不使用 kubeconfig 时需要）
+  # insecure_skip_tls_verify: false
+  # ca_cert: "/path/to/ca.crt"
+
+# 备份配置
+backup:
+  # 备份根目录
+  root_path: "/data/backup"
+
+  # 备份策略
+  strategy:
+    # 全量备份频率（天），0 表示禁用
+    full_backup_interval: 7
+    # 增量备份频率（小时），0 表示禁用
+    incremental_backup_interval: 24
+
+  # 保留策略
+  retention:
+    # 全量备份保留数量
+    full_backup_count: 4
+    # 增量备份保留数量
+    incremental_backup_count: 7
+    # 最长保留天数（超出此天数的备份会被删除）
+    max_days: 30
+
+  # 备份命名格式（Python strftime 格式）
+  filename_format: "{app_name}_{namespace}_{timestamp}_{type}"
+    # 可用变量: {app_name}, {namespace}, {timestamp}, {type}, {pod_name}
+    # {type}: full/incremental/snapshot
+
+# 目标命名空间（留空则备份所有命名空间）
+namespaces: []
+  # - default
+  # - kube-system
+  # - app-production
+
+# 应用发现配置
+discovery:
+  # 自动发现有状态应用
+  auto_discovery: true
+
+  # 资源类型
+  resources:
+    - StatefulSet
+    - Deployment  # 仅当使用 PVC 时
+    - Pod         # 独立 Pod 使用 PVC 时
+
+  # 标签选择器（仅发现匹配标签的应用）
+  # 留空则发现所有应用
+  label_selector: ""
+    # backup-enabled=true
+    # 或: app in (mysql,redis,postgresql)
+
+# 邮件通知配置
+email:
+  enabled: false
+  smtp_host: "smtp.example.com"
+  smtp_port: 587
+  smtp_username: "backup@example.com"
+  smtp_password: "your-password"  # 建议使用环境变量
+  from_address: "backup@example.com"
+  to_addresses:
+    - "admin@example.com"
+    - "ops@example.com"
+
+  # 通知内容
+  subject_success: "[K8s Backup] 备份成功: {app_name}"
+  subject_failure: "[K8s Backup] 备份失败: {app_name}"
+  subject_warning: "[K8s Backup] 备份警告: {app_name}"
+
+# Webhook 通知配置
+webhook:
+  enabled: false
+  url: "https://hooks.example.com/backup"
+  method: "POST"  # POST/PUT
+  headers:
+    Content-Type: "application/json"
+    Authorization: "Bearer your-token"
+
+# 日志配置
+logging:
+  # 日志级别: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: "INFO"
+  # 日志文件路径，留空则输出到控制台
+  file: "/var/log/k8s-backup-manager.log"
+  # 日志文件最大大小（MB）
+  max_size: 10
+  # 保留日志文件数量
+  backup_count: 5
+
+# 数据库备份配置（适用于 MySQL/PostgreSQL 等）
+database:
+  # mysqldump 选项
+  mysqldump_options: "--single-transaction --quick --lock-tables=false"
+  # pg_dump 选项
+  pg_dump_options: "--format=custom --blobs"
+
+# 存储后端配置
+storage:
+  # 本地存储（默认）
+  type: "local"
+
+  # S3 兼容存储（可选）
+  # type: "s3"
+  # s3:
+  #   endpoint: "https://s3.example.com"
+  #   bucket: "k8s-backups"
+  #   access_key: "your-access-key"
+  #   secret_key: "your-secret-key"
+  #   region: "us-east-1"
+
+  # MinIO（S3 兼容）
+  # type: "s3"
+  # s3:
+  #   endpoint: "http://minio.example.com:9000"
+  #   bucket: "backups"
+  #   access_key: "minioadmin"
+  #   secret_key: "minioadmin"
+  #   region: ""
+
+  # Ceph RGW（S3 兼容）
+  # type: "s3"
+  # s3:
+  #   endpoint: "http://rgw.example.com"
+  #   bucket: "k8s-backups"
+  #   access_key: "your-access-key"
+  #   secret_key: "your-secret-key"
+  #   region: ""
+
+# 排除规则
+exclude:
+  # 排除的命名空间
+  namespaces: []
+    # - kube-system
+    # - monitoring
+
+  # 排除的标签
+  labels: []
+    # - backup-enabled=false
+
+  # 排除的 PVC 名称模式（正则表达式）
+  pvc_patterns: []
+    # - "^tmp-.*"
+    # - "^cache-.*"
+
+# 自定义脚本配置
+custom_scripts:
+  # 备份前执行的脚本
+  pre_backup: ""
+    # /scripts/pre-backup.sh
+
+  # 备份后执行的脚本
+  post_backup: ""
+    # /scripts/post-backup.sh
+
+  # 失败时执行的脚本
+  on_failure: ""
+    # /scripts/on-failure.sh
