@@ -35,7 +35,15 @@ log "开始 MinIO 备份: endpoint=${MINIO_ENDPOINT}, bucket=${MINIO_BUCKET:-all
 
 # 配置 mc alias
 log "配置 MinIO 连接..."
-mc alias set ${MC_ALIAS} "${MINIO_ENDPOINT}" "${MINIO_ACCESS_KEY}" "${MINIO_SECRET_KEY}" --api S3v4
+
+# 安全处理访问密钥 - 使用临时配置文件或环境变量
+if [ -n "${MINIO_ACCESS_KEY}" ] && [ -n "${MINIO_SECRET_KEY}" ]; then
+    # 使用环境变量传递凭据，避免在命令行中暴露
+    MC_ACCESS_KEY="${MINIO_ACCESS_KEY}" MC_SECRET_KEY="${MINIO_SECRET_KEY}" \
+    mc alias set ${MC_ALIAS} "${MINIO_ENDPOINT}" "${MINIO_ACCESS_KEY}" "${MINIO_SECRET_KEY}" --api S3v4
+else
+    error_exit "MinIO 访问密钥或密钥未配置"
+fi
 
 # 获取所有 bucket 列表
 if [ -z "${MINIO_BUCKET}" ]; then

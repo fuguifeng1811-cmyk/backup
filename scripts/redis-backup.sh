@@ -35,8 +35,10 @@ log "开始 Redis 备份: type=${BACKUP_TYPE}, host=${REDIS_HOST}:${REDIS_PORT}"
 
 # 构建 redis-cli 参数
 REDIS_CLI_OPTS="-h ${REDIS_HOST} -p ${REDIS_PORT}"
+
+# 安全处理密码 - 使用 REDISCLI_AUTH 环境变量避免密码泄露到进程列表
 if [ -n "${REDIS_PASSWORD}" ]; then
-    REDIS_CLI_OPTS="${REDIS_CLI_OPTS} -a ${REDIS_PASSWORD} --no-auth-warning"
+    export REDISCLI_AUTH="${REDIS_PASSWORD}"
 fi
 
 if [ "${BACKUP_TYPE}" = "rdb" ]; then

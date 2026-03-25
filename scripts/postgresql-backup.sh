@@ -37,7 +37,22 @@ log "开始 PostgreSQL 备份: format=${BACKUP_FORMAT}, database=${PGDATABASE:-a
 
 # 构建 pg_dump 参数
 PG_DUMP_OPTS="--host=${PGHOST} --port=${PGPORT} --username=${PGUSER}"
-export PGPASSWORD="${PGPASSWORD}"
+
+# 安全处理密码 - 使用 .pgpass 文件避免密码泄露
+if [ -n "${PGPASSWORD}" ]; then
+    # 创建临时 .pgpass 文件（仅当前用户可读）
+    PGPASS_FILE=$(mktemp)
+    chmod 600 "${PGPASS_FILE}"
+
+    cat > "${PGPASS_FILE}" <<EOF
+${PGHOST}:${PGPORT}:${PGDATABASE:-*}:${PGUSER}:${PGPASSWORD}
+EOF
+
+    export PGPASSFILE="${PGPASS_FILE}"
+
+    # 确保临时文件在脚本退出时被删除
+    trap "rm -f ${PGPASS_FILE}" EXIT INT TERM
+fi
 
 if [ -n "${PGDATABASE}" ]; then
     # 备份指定数据库
