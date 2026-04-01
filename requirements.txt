@@ -2,3 +2,4 @@ kubernetes>=12.0.0
 PyYAML>=6.0
 pathlib2>=2.7.8; python_version < "3.4"
 boto3>=1.34.0          # S3 支持
+tenacity>=8.2.0        # 重试机制
