@@ -11,6 +11,7 @@ import logging
 from typing import List, Dict, Optional
 from kubernetes import client, config
 from kubernetes.client import V1StatefulSet, V1Deployment, V1Pod, V1PersistentVolumeClaim, V1DaemonSet, V1ReplicaSet
+from utils.retry import retry_on_k8s_api_error
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,7 @@ class ApplicationDiscovery:
         logger.info(f"共发现 {len(apps)} 个有状态应用")
         return apps
 
+    @retry_on_k8s_api_error(max_attempts=3)
     def _discover_statefulsets(self, namespace: str) -> List[Dict]:
         """发现 StatefulSet"""
         try:
@@ -91,6 +93,7 @@ class ApplicationDiscovery:
             logger.error(f"发现 StatefulSet 失败 (namespace={namespace}): {e}")
             return []
 
+    @retry_on_k8s_api_error(max_attempts=3)
     def _discover_pvc_deployments(self, namespace: str) -> List[Dict]:
         """发现使用 PVC 的 Deployment"""
         try:
@@ -109,6 +112,7 @@ class ApplicationDiscovery:
             logger.error(f"发现 Deployment 失败 (namespace={namespace}): {e}")
             return []
 
+    @retry_on_k8s_api_error(max_attempts=3)
     def _discover_pvc_daemonsets(self, namespace: str) -> List[Dict]:
         """发现使用 PVC 的 DaemonSet"""
         try:
@@ -127,6 +131,7 @@ class ApplicationDiscovery:
             logger.error(f"发现 DaemonSet 失败 (namespace={namespace}): {e}")
             return []
 
+    @retry_on_k8s_api_error(max_attempts=3)
     def _discover_pvc_replicasets(self, namespace: str) -> List[Dict]:
         """发现使用 PVC 的 ReplicaSet"""
         try:
@@ -145,6 +150,7 @@ class ApplicationDiscovery:
             logger.error(f"发现 ReplicaSet 失败 (namespace={namespace}): {e}")
             return []
 
+    @retry_on_k8s_api_error(max_attempts=3)
     def _discover_pvc_pods(self, namespace: str) -> List[Dict]:
         """发现使用 PVC 的独立 Pod"""
         try:
@@ -295,6 +301,7 @@ class ApplicationDiscovery:
 
         return pvcs
 
+    @retry_on_k8s_api_error(max_attempts=3)
     def _get_all_namespaces(self) -> List[str]:
         """获取所有命名空间"""
         try:
@@ -304,6 +311,7 @@ class ApplicationDiscovery:
             logger.error(f"获取命名空间列表失败: {e}")
             return []
 
+    @retry_on_k8s_api_error(max_attempts=3)
     def get_pvc_details(self, namespace: str, pvc_name: str) -> Optional[Dict]:
         """
         获取 PVC 详细信息

@@ -7,6 +7,7 @@ import boto3
 import logging
 from botocore.exceptions import ClientError
 from typing import Optional, Dict, Any
+from utils.retry import retry_on_s3_error
 
 
 class S3Handler:
@@ -31,6 +32,7 @@ class S3Handler:
             region_name=region
         )
 
+    @retry_on_s3_error(max_attempts=3)
     def upload_file(self, local_file_path: str, bucket: str, remote_key: str) -> bool:
         """
         上传文件到 S3 兼容存储
@@ -51,6 +53,7 @@ class S3Handler:
             self.logger.error(f"Failed to upload {local_file_path} to {bucket}/{remote_key}: {e}")
             return False
 
+    @retry_on_s3_error(max_attempts=3)
     def download_file(self, bucket: str, remote_key: str, local_file_path: str) -> bool:
         """
         从 S3 兼容存储下载文件
@@ -71,6 +74,7 @@ class S3Handler:
             self.logger.error(f"Failed to download {bucket}/{remote_key} to {local_file_path}: {e}")
             return False
 
+    @retry_on_s3_error(max_attempts=3)
     def create_bucket_if_not_exists(self, bucket: str) -> bool:
         """
         如果不存在则创建桶
